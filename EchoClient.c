@@ -55,7 +55,7 @@ int main(){
 		}
 		rcvBuffer[n] = '\0'; //문자열 뒷부분 깨짐 방지
 		printf("received data: %s\n", rcvBuffer); //서버에서 받은 메세지 출력
-		printf("rcvBuffer length: %d\n", n); //3-2. 서버에섭 다은 메세지의 길이 출력 
+		printf("rcvBuffer length: %d\n", n); //3-2. 서버에섭 받은 메세지의 길이 출력 
 	}
 	close(c_socket);
 	return 0;	
