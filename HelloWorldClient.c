@@ -53,15 +53,17 @@ int main(){
 				return -1;
 				}
 				
-		//	printf("this is client\n you said : ");
+			if(strncasecmp(scanString,"quit",4)==0 || strncasecmp(scanString,"kill server",11)==0)
+				break;
+			printf("you said : ");
 			n = read(c_socket, rcvBuffer,sizeof(rcvBuffer));
-			printf("n=%d\n",n);
+			printf("%s\n",rcvBuffer);
 			if(n<0){
 				printf("read failed\n");
 				return -1;
 			rcvBuffer[n] = '\0';
-			printf("n=%d\n");
 			printf("%s\n",rcvBuffer);
+
 		}
 	
 	}

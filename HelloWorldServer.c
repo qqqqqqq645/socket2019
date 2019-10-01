@@ -66,14 +66,21 @@ int main(){
 
 		
 			stringData[n]='\0'; //prevent crash
-			n=strlen(stringData);		
+			printf("echo data\n");
+			write(c_socket,stringData,n);
+
 			printf("client : %s\n",stringData);
-			if(strcmp(stringData,ENDCLIENT)==0) {
-				printf("quit 입력으로 연결 종료\n");
+			if(strcmp(stringData,ENDCLIENT)==0 || strncasecmp(stringData,"kill server",11)==0) {
+				printf("연결 종료\n");
 				break;
 			}
-			printf("echo data\n");
-			write(c_socket,buffer,sizeof(buffer));
+
+
+		}
+	
+		if(strncasecmp(stringData,"kill server",11)==0){
+			printf("kill server 입력으로인한 서버 종료\n");
+			break;
 		}
 	}
 	close(s_socket);
