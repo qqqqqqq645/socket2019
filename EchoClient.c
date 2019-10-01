@@ -29,7 +29,7 @@ int main(){
 		close(c_socket); //자원 회수
 		return -1;  //프로세스 종료
 	}
-
+	//서버 접속시 메시지 출력
 	n=read(c_socket, rcvBuffer, sizeof(rcvBuffer));
 		if(n<0){
 			printf("Read FAiled\n");
@@ -43,7 +43,7 @@ int main(){
 		fgets(sendBuffer,sizeof(sendBuffer),stdin);
 		write(c_socket,sendBuffer,strlen(sendBuffer));
 		//입력받은 메세지가 quit 이면 break
-		if(strncasecmp(sendBuffer,"quit",4)==0)
+		if(strncasecmp(sendBuffer,"quit",4)==0 || strncasecmp(sendBuffer,"kill server",11)==0)
 			break;
 	//5. 서버에서 보낸 메시지 읽기 
 		n = read(c_socket, rcvBuffer, sizeof(rcvBuffer)); 

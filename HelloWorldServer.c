@@ -72,11 +72,8 @@ int main(){
 				printf("quit 입력으로 연결 종료\n");
 				break;
 			}
-			printf("ff\n");
-			printf("n = %d\n",n);
-			strcpy(transBuffer,stringData);
-			n=strlen(transBuffer);
-			write(c_socket,transBuffer,n);
+			printf("echo data\n");
+			write(c_socket,buffer,sizeof(buffer));
 		}
 	}
 	close(s_socket);

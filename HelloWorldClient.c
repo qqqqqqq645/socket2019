@@ -12,7 +12,7 @@ int main(){
 	struct sockaddr_in c_addr;
 	int n;
 	char rcvBuffer[BUFSIZE];//서버에서 보내준 메세지를 저장하는 변수
-	char scanString[BUFSIZE]; 
+	char scanString[BUFSIZE];
 	
 	//1. 클라이언트 소켓 생성
 	c_socket = socket(PF_INET, SOCK_STREAM, 0); //서버와 동일한 설정으로 생성
@@ -52,13 +52,15 @@ int main(){
 				printf("Write Failed\n");
 				return -1;
 				}
-	
-			printf("this is client\n you said : ");
+				
+		//	printf("this is client\n you said : ");
 			n = read(c_socket, rcvBuffer,sizeof(rcvBuffer));
+			printf("n=%d\n",n);
 			if(n<0){
 				printf("read failed\n");
 				return -1;
-			rcvBuffer[n] = '\0';	
+			rcvBuffer[n] = '\0';
+			printf("n=%d\n");
 			printf("%s\n",rcvBuffer);
 		}
 	
