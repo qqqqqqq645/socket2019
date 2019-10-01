@@ -12,8 +12,6 @@ int main(){
 	struct sockaddr_in c_addr;
 	int n;
 	char rcvBuffer[BUFSIZE];//서버에서 보내준 메세지를 저장하는 변수
-	char scanString[BUFSIZE]; 
-	char rcvString[BUFSIZE];
 	
 	//1. 클라이언트 소켓 생성
 	c_socket = socket(PF_INET, SOCK_STREAM, 0); //서버와 동일한 설정으로 생성
@@ -30,7 +28,6 @@ int main(){
 		close(c_socket); //자원 회수
 		return -1;  //프로세스 종료
 	}
-
 	//4. 서버에서 보낸 메시지 읽기 
 	n = read(c_socket, rcvBuffer, sizeof(rcvBuffer)); 
 	//서버에서 보내준 메세지를 rcvBuffer에 저장하고, 메세지의 길이를 리턴
@@ -39,31 +36,9 @@ int main(){
 		printf("Read Failed\n");
 		return -1;
 	}
-
 	rcvBuffer[n] = '\0'; //문자열 뒷부분 깨짐 방지
-	
 	printf("received data: %s\n", rcvBuffer); //서버에서 받은 메세지 출력
-	//printf("rcvBuffer length: %d\n", n); //3-2. 서버에섭 다은 메세지의 길이 출력 
-		while(1){
-			
-			printf("input string : ");
-			fgets(scanString,BUFSIZE,stdin);
-			n=write(c_socket,scanString,sizeof(scanString));
-			if(n<0){//writing failed
-				printf("Write Failed\n");
-				return -1;
-				}
-	
-			printf("this is client\n you said : ");
-			n = read(c_socket, rcvString,sizeof(rcvBuffer));
-			if(n<0){
-				printf("read failed\n");
-				return -1;
-			rcvString[n] = '\0';	
-			printf("%s\n",rcvString);
-		}
-	
-	}
+	printf("rcvBuffer length: %d\n", n); //3-2. 서버에섭 다은 메세지의 길이 출력 
 	close(c_socket);
-	return 0;		
+	return 0;	
 }
