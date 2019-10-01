@@ -4,14 +4,20 @@
 #include <string.h>
 
 #define PORT 10000
+#define BUF_SIZE 100
+#define ENDCLIENT "quit\n"
 
-char buffer[100] = "My name is hongkyu\n";
+char buffer[100] = "server connercted\n";
+//char endclient[100] = "quit";
 
 int main(){
 	int c_socket, s_socket;
 	struct sockaddr_in s_addr, c_addr;
+	char stringData[BUF_SIZE];
 	int len;
 	int n;
+	int i;
+	char transBuffer[BUF_SIZE];
 
 	// 1. 서버 소켓 생성
 	//서버 소켓 = 클라이언트의 접속 요청을 처리(허용)해 주기 위한 소켓
@@ -48,8 +54,30 @@ int main(){
 
 		n = strlen(buffer);
 		write(c_socket, buffer, n); //클라이언트에게 buffer의 내용을 전송함
+		
+		while(1){
+			n = read(c_socket,stringData,sizeof(stringData)); 
+			//data read
 
-		close(c_socket);
+			if(n<0){//read failed
+				printf("Read Failed\n");
+				return -1;
+			}
+
+		
+			stringData[n]='\0'; //prevent crash
+			n=strlen(stringData);		
+			printf("client : %s\n",stringData);
+			if(strcmp(stringData,ENDCLIENT)==0) {
+				printf("quit 입력으로 연결 종료\n");
+				break;
+			}
+			printf("ff\n");
+			printf("n = %d\n",n);
+			strcpy(transBuffer,stringData);
+			n=strlen(transBuffer);
+			write(c_socket,transBuffer,n);
+		}
 	}
 	close(s_socket);
 	return 0;	
