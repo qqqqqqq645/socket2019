@@ -30,6 +30,7 @@ int main(){
 		return -1;  //프로세스 종료
 	}
 	//4.서버에 메시지 보내기
+	fgets(sendBuffer,sizeof(sendBuffer),stdin);
 	write(c_socket,sendBuffer,strlen(sendBuffer));
 	//5. 서버에서 보낸 메시지 읽기 
 	n = read(c_socket, rcvBuffer, sizeof(rcvBuffer)); 
