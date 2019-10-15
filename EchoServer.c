@@ -56,8 +56,17 @@ int main(){
 		//클라이언트가 quit또는 kill server 입력시 클라이언트 소켓 종료
 			if(strncasecmp(rcvBuffer,"quit",4)==0 ||strncasecmp(rcvBuffer,"kill server",11)==0 )
 				break;
+			else if(!strncasecmp(rcvBuffer,"안녕하세요",strlen("안녕하세요"))){
+				strcpy(buffer,"안녕하세요. 만나서 반가워요.");
+			}
+		
+			else if(!strncasecmp(rcvBuffer,"이름이뭐야",strlen("이름이뭐야"))){
+				strcpy(buffer,"내이름은server야");
+			}
+			else
+				strcpy(buffer,"무슨 말인지 모르겠습니다.");
 			printf("buffer = %s\n",buffer);
-			write(c_socket, rcvBuffer, n); //클라이언트에게 buffer의 내용을 전송함
+			write(c_socket, buffer, strlen(buffer)); //클라이언트에게 buffer의 내용을 전송함
 		}
 		close(c_socket);
 		//kill server 입력시 서버소켓도 종료
