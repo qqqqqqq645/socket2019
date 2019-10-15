@@ -54,7 +54,7 @@ int main(){
 			n = read(c_socket, rcvBuffer, sizeof(rcvBuffer));
 			printf("rcvBuffer = %s\n",rcvBuffer);
 		//클라이언트가 quit또는 kill server 입력시 클라이언트 소켓 종료
-			rcvBuffer[n] = '\0';//개행문자 삭제
+			rcvBuffer[n-1] = '\0';//개행문자 삭제
 			if(strncasecmp(rcvBuffer,"quit",4)==0 ||strncasecmp(rcvBuffer,"kill server",11)==0 )
 				break;
 			else if(!strncasecmp(rcvBuffer,"안녕하세요",strlen("안녕하세요"))){
