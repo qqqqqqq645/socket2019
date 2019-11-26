@@ -10,7 +10,7 @@ int pushClient(int); //새로운 클라이언트가 접속했을 때 클라이�
 int popClient(int); //클라이언트가 종료했을 때 클라이언트 정보 삭제
 pthread_t thread;
 pthread_mutex_t mutex;
-#define MAX_CLIENT 10
+#define MAX_CLIENT 3 
 #define CHATDATA 1024
 #define INVALID_SOCK -1
 #define PORT 9000
@@ -88,9 +88,9 @@ int pushClient(int c_socket) {
     ///////////////////////////////
     if(stackstat<MAX_CLIENT){
 	pthread_mutex_lock(&mutex);
-	list_c[stackstat] = c_socket;
+	list_c[stackstat++] = c_socket;
 	pthread_mutex_unlock(&mutex);
-	return stackstat++;
+	return stackstat;
 	}
 	else
 		return -1;
@@ -103,9 +103,19 @@ int popClient(int c_socket)
 	int i=0;
 	int temp;
     //REMOVE c_socket from list_c array.
-    //
-    ///////////////////////////////////
-    while(i<stackstat){
-	
+    while(i<MAX_CLIENT){//리스트에서 c_socket 의 위치 파악
+		if(c_socket == list_c[i]){
+			//list_c[i] = list_c[i+1];
+			break;
+		}
 	}
+	
+
+	if(i!=MAX_CLIENT-1){//찾은 위치가 배열으 맨 끝이 아니면
+		int j = MAX_CLIENT-i;
+		for(i;i<=stackstat;i++){
+			list_c[i] = list_c[i+1];
+		}
+	}
+	return --stackstat;
 }
