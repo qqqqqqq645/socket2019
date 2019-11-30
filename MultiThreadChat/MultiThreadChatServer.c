@@ -13,7 +13,7 @@ pthread_mutex_t mutex;
 #define MAX_CLIENT 3 
 #define CHATDATA 1024
 #define INVALID_SOCK -1
-#define PORT 9041
+#define PORT 9024
 //int    list_c[MAX_CLIENT];
 typedef struct __clientData{
 	int c_socket;
@@ -94,9 +94,14 @@ void *do_chat(void *arg)
 				char namedesc[20];
 				char *msg;
 				char sendMsg[CHATDATA];
+				memset(sendMsg,0,sizeof(sendMsg));
 				strtok(usrMsg," ");// "/w"
-				if(msg = strtok(NULL," ")!=NULL);{
+				printf("usrMsg = %s\n",usrMsg);
+				msg = strtok(NULL," ");
+				if(msg != NULL){
 					strcpy(namedesc,msg);
+					printf("지금");
+					printf("namedesc = %s\n",namedesc);
 					msg = strtok(NULL," ");
 					while(msg !=NULL){
 						strcat(sendMsg,msg);
@@ -114,7 +119,7 @@ void *do_chat(void *arg)
 							i++;
 					}
 					if(i == MAX_CLIENT){
-						sprintf(chatData,"no such user");
+						sprintf(chatData,"no such user\n");
 						write(c_socket,chatData,strlen(chatData));
 					}
 					
@@ -135,6 +140,7 @@ void *do_chat(void *arg)
 			}
         }
 	}
+}
 
 
 int pushClient(int c_socket) {
