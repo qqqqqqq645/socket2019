@@ -9,7 +9,7 @@
 #include <signal.h>
 #define CHATDATA 1024
 #define IPADDR "127.0.0.1"
-#define PORT 9000
+#define PORT 9041
 void *do_send_chat(void *);
 void *do_receive_chat(void *);
 pthread_t thread_1, thread_2;
@@ -38,6 +38,7 @@ int main(int argc, char *argv[ ])
         printf("Can not connect\n");
         return -1;
     }
+	write(c_socket,nickname,strlen(nickname)); //send nickname to server
     //pthread_create with do_send function
 	status[i++] = pthread_create(&thread_1,NULL,do_send_chat,(void *)&c_socket);
     //pthread_create with do_receive_chat function

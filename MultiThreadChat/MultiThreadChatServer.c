@@ -13,8 +13,13 @@ pthread_mutex_t mutex;
 #define MAX_CLIENT 3 
 #define CHATDATA 1024
 #define INVALID_SOCK -1
-#define PORT 9000
-int    list_c[MAX_CLIENT];
+#define PORT 9041
+//int    list_c[MAX_CLIENT];
+typedef struct __clientData{
+	int c_socket;
+	char nickname[20];
+} clientData;
+clientData list_c[MAX_CLIENT];
 char    escape[ ] = "exit";
 char    greeting[ ] = "Welcome to chatting room\n";
 char    CODE200[ ] = "Sorry No More Connection\n";
@@ -43,7 +48,7 @@ int main(int argc, char *argv[ ])
         return -1;
     }
     for(i = 0; i < MAX_CLIENT; i++)
-        list_c[i] = INVALID_SOCK;
+        list_c[i].c_socket = INVALID_SOCK;
     while(1) {
         len = sizeof(c_addr);
         c_socket = accept(s_socket, (struct sockaddr *) &c_addr, &len);
@@ -64,26 +69,74 @@ void *do_chat(void *arg)
 {
     int c_socket = *((int *)arg);
     char chatData[CHATDATA];
-    int i, n;
-	char *test;
+	char *name;
+    int i=0, n;
+	while(i<MAX_CLIENT){
+		if(list_c[i].c_socket == c_socket){
+			name = list_c[i].nickname;
+			break;
+		}
+		i++;
+	}
+	printf("now name = %s\n",name);
     while(1) {
         memset(chatData, 0, sizeof(chatData));
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
             //write chatData to all clients
 			printf("data = %s\n",chatData);
-			i=0;
-		while(i<MAX_CLIENT){
-			write(list_c[i],chatData,strlen(chatData));
-			i++;
-		}           
-            if(strstr(chatData, escape)!=NULL) {
-				printf("발동\n");
+        	if(strstr(chatData, escape)!=NULL) {
 				popClient(c_socket);
-                break;
-            }
+           	 break;
+        	}
+			char *usrMsg = chatData;
+			usrMsg = usrMsg+(strlen(name)+3);//"[닉네임] " 만큼 문자
+			if(strncasecmp(usrMsg,"/w",2)==0){
+				char namedesc[20];
+				char *msg;
+				char sendMsg[CHATDATA];
+				strtok(usrMsg," ");// "/w"
+				if(msg = strtok(NULL," ")!=NULL);{
+					strcpy(namedesc,msg);
+					msg = strtok(NULL," ");
+					while(msg !=NULL){
+						strcat(sendMsg,msg);
+						strcat(sendMsg," ");
+						msg = strtok(NULL," ");
+					}
+					i=0;
+					while(i<MAX_CLIENT){
+						if(strncasecmp(namedesc, list_c[i].nickname, strlen(namedesc)) == 0){
+							sprintf(chatData,"[%s]'s whispher : %s\n",name,sendMsg);
+							write(list_c[i].c_socket,chatData,strlen(chatData));
+							break;	
+						}
+						else 
+							i++;
+					}
+					if(i == MAX_CLIENT){
+						sprintf(chatData,"no such user");
+						write(c_socket,chatData,strlen(chatData));
+					}
+					
+				}
+				else {
+					sprintf(chatData,"To use whispher : /w [username] [message]\n");
+					write(c_socket,chatData,strlen(chatData));
+				}
+					
+			}
+			
+			else{	
+				i=0;
+				while(i<MAX_CLIENT){
+					write(list_c[i].c_socket,chatData,strlen(chatData));
+					i++;
+				}
+			}
         }
-    }
-}
+	}
+
+
 int pushClient(int c_socket) {
     //ADD c_socket to list_c array.
     //
@@ -91,10 +144,11 @@ int pushClient(int c_socket) {
 	int i=0;
 	pthread_mutex_lock(&mutex);
 	while(i<MAX_CLIENT){
-		if(list_c[i] == INVALID_SOCK){ //find empty space from list_c
-        //list_c[i] = INVALID_SOCK
-			list_c[i] = c_socket;
+		if(list_c[i].c_socket == INVALID_SOCK){ //find empty space from list_c
+			list_c[i].c_socket = c_socket;
 			pthread_mutex_unlock(&mutex);
+			read(c_socket,list_c[i].nickname,sizeof(sizeof(char)*20));//receive nickname from client
+			printf("name =%s\n",list_c[i].nickname);
 			return i;
 		} else
 			i++;
@@ -111,8 +165,9 @@ int popClient(int c_socket)
     //REMOVE c_socket from list_c array.
 	pthread_mutex_lock(&mutex);
 	while(i<MAX_CLIENT){
-		if(list_c[i] == c_socket){
-			list_c[i] = INVALID_SOCK;
+		if(list_c[i].c_socket == c_socket){
+			list_c[i].c_socket = INVALID_SOCK;
+			memset((char *)&list_c[i].nickname,'\0',sizeof(char)*20);
 			pthread_mutex_unlock(&mutex);
 			return i;
 		}
