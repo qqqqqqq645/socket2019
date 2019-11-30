@@ -15,7 +15,6 @@ pthread_mutex_t mutex;
 #define INVALID_SOCK -1
 #define PORT 9000
 int    list_c[MAX_CLIENT];
-int 	stackstat = 0;
 char    escape[ ] = "exit";
 char    greeting[ ] = "Welcome to chatting room\n";
 char    CODE200[ ] = "Sorry No More Connection\n";
@@ -52,6 +51,7 @@ int main(int argc, char *argv[ ])
         if(res < 0) { //MAX_CLIENT만큼 이미 클라이언트가 접속해 있다면,
             write(c_socket, CODE200, strlen(CODE200));
             close(c_socket);
+			printf("num =%d\n",res);
         } else {
             write(c_socket, greeting, strlen(greeting));
             //pthread_create with do_chat function.
@@ -65,18 +65,20 @@ void *do_chat(void *arg)
     int c_socket = *((int *)arg);
     char chatData[CHATDATA];
     int i, n;
+	char *test;
     while(1) {
         memset(chatData, 0, sizeof(chatData));
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
             //write chatData to all clients
-            	i=0;
-		while(i<stackstat){
+			printf("data = %s\n",chatData);
+			i=0;
+		while(i<MAX_CLIENT){
 			write(list_c[i],chatData,strlen(chatData));
 			i++;
 		}           
-
-            if(strstr(chatData, escape) != NULL) {
-                popClient(c_socket);
+            if(strstr(chatData, escape)!=NULL) {
+				printf("발동\n");
+				popClient(c_socket);
                 break;
             }
         }
@@ -86,13 +88,18 @@ int pushClient(int c_socket) {
     //ADD c_socket to list_c array.
     //
     ///////////////////////////////
-    if(stackstat<MAX_CLIENT){
+	int i=0;
 	pthread_mutex_lock(&mutex);
-	list_c[stackstat++] = c_socket;
-	pthread_mutex_unlock(&mutex);
-	return stackstat;
+	while(i<MAX_CLIENT){
+		if(list_c[i] == INVALID_SOCK){ //find empty space from list_c
+        //list_c[i] = INVALID_SOCK
+			list_c[i] = c_socket;
+			pthread_mutex_unlock(&mutex);
+			return i;
+		} else
+			i++;
 	}
-	else
+		pthread_mutex_unlock(&mutex);
 		return -1;
     //return -1, if list_c is full.
     //return the index of list_c which c_socket is added.
@@ -101,21 +108,19 @@ int popClient(int c_socket)
 {
     close(c_socket);
 	int i=0;
-	int temp;
     //REMOVE c_socket from list_c array.
-    while(i<MAX_CLIENT){//리스트에서 c_socket 의 위치 파악
-		if(c_socket == list_c[i]){
-			//list_c[i] = list_c[i+1];
-			break;
+	pthread_mutex_lock(&mutex);
+	while(i<MAX_CLIENT){
+		if(list_c[i] == c_socket){
+			list_c[i] = INVALID_SOCK;
+			pthread_mutex_unlock(&mutex);
+			return i;
 		}
+		else
+			i++;
 	}
+	pthread_mutex_unlock(&mutex);
+	return -1;
 	
 
-	if(i!=MAX_CLIENT-1){//찾은 위치가 배열으 맨 끝이 아니면
-		int j = MAX_CLIENT-i;
-		for(i;i<=stackstat;i++){
-			list_c[i] = list_c[i+1];
-		}
-	}
-	return --stackstat;
 }
