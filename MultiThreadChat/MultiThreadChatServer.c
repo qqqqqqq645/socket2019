@@ -8,12 +8,13 @@
 void *do_chat(void *); //채팅 메세지를 보내는 함수
 int pushClient(int); //새로운 클라이언트가 접속했을 때 클라이언트 정보 추가
 int popClient(int); //클라이언트가 종료했을 때 클라이언트 정보 삭제
+int c_stack; //클라이언트 스택 관리
 pthread_t thread;
 pthread_mutex_t mutex;
 #define MAX_CLIENT 3 
 #define CHATDATA 1024
 #define INVALID_SOCK -1
-#define PORT 9024
+#define PORT 9063
 //int    list_c[MAX_CLIENT];
 typedef struct __clientData{
 	int c_socket;
@@ -56,13 +57,13 @@ int main(int argc, char *argv[ ])
         if(res < 0) { //MAX_CLIENT만큼 이미 클라이언트가 접속해 있다면,
             write(c_socket, CODE200, strlen(CODE200));
             close(c_socket);
-			printf("num =%d\n",res);
         } else {
             write(c_socket, greeting, strlen(greeting));
             //pthread_create with do_chat function.
             //스레드 생선
             int status = pthread_create(&thread,NULL,do_chat,(void *)&c_socket);
         }
+		printf("c_stack = %d\n",c_stack);
     }
 }
 void *do_chat(void *arg)
@@ -81,6 +82,7 @@ void *do_chat(void *arg)
 	printf("now name = %s\n",name);
     while(1) {
         memset(chatData, 0, sizeof(chatData));
+		printf("%s c_stack = %d\n",name,c_stack);
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
             //write chatData to all clients
 			printf("data = %s\n",chatData);
@@ -149,16 +151,16 @@ int pushClient(int c_socket) {
     ///////////////////////////////
 	int i=0;
 	pthread_mutex_lock(&mutex);
-	while(i<MAX_CLIENT){
-		if(list_c[i].c_socket == INVALID_SOCK){ //find empty space from list_c
-			list_c[i].c_socket = c_socket;
+	if(c_stack<MAX_CLIENT){
+			list_c[c_stack].c_socket = c_socket;
+			read(c_socket,list_c[c_stack].nickname,sizeof(sizeof(char)*20));//receive nickname from client
+			//c_stack++;
 			pthread_mutex_unlock(&mutex);
-			read(c_socket,list_c[i].nickname,sizeof(sizeof(char)*20));//receive nickname from client
-			printf("name =%s\n",list_c[i].nickname);
-			return i;
-		} else
-			i++;
-	}
+			printf("c_stack in pushC = %d\n",c_stack);
+			return c_stack++;
+		} 
+	else
+	
 		pthread_mutex_unlock(&mutex);
 		return -1;
     //return -1, if list_c is full.
@@ -169,19 +171,38 @@ int popClient(int c_socket)
     close(c_socket);
 	int i=0;
     //REMOVE c_socket from list_c array.
-	pthread_mutex_lock(&mutex);
-	while(i<MAX_CLIENT){
+	pthread_mutex_lock(&mutex);/*
+	while(i<c_stack-1){
 		if(list_c[i].c_socket == c_socket){
-			list_c[i].c_socket = INVALID_SOCK;
-			memset((char *)&list_c[i].nickname,'\0',sizeof(char)*20);
-			pthread_mutex_unlock(&mutex);
-			return i;
+			list_c[i].c_socket = list_c[i+1].c_socket;
+			//memset((char *)&list_c[i].nickname,'\0',sizeof(char)*20);
+			strcpy(list_c[i].nickname,list_c[i+1].nickname);
+	//		pthread_mutex_unlock(&mutex);
+	//		return i;
 		}
-		else
 			i++;
+	}*/
+	while(i<c_stack-1){
+		if(list_c[i].c_socket == c_socket){
+			int j = i;
+			while(j<c_stack-1){
+				list_c[j].c_socket = list_c[j+1].c_socket;
+				strcpy(list_c[j].nickname,list_c[j+1].nickname);
+				j++;
+			}
+			break;
+		}
+		i++;
 	}
+	//list_c[i+1].c_socket = INVALID_SOCK;
+	//memset(list_c[i+1].nickname,0,strlen(list_c[i+1].nickname));
+			printf("c_stack in popC before before mutex = %d\n",c_stack);
+	list_c[--c_stack].c_socket = INVALID_SOCK;
+	memset(list_c[c_stack].nickname,0,strlen(list_c[c_stack].nickname));
+			printf("c_stack in popC before mutex = %d\n",c_stack);
 	pthread_mutex_unlock(&mutex);
-	return -1;
+			printf("c_stack in popC = %d\n",c_stack);
+	return c_stack;
 	
 
 }
