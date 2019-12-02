@@ -82,6 +82,7 @@ void *do_chat(void *arg)
     char chatData[CHATDATA];
 	char chatalert [CHATDATA];
     int i=0, n;
+	memset(chatalert,0,sizeof(chatalert));
 	printf("now name = %s\n",username);
 	sprintf(chatalert,"You are in chatroom %d\n",roomnum);
 	write(c_socket, chatalert,strlen(chatalert));
@@ -91,7 +92,7 @@ void *do_chat(void *arg)
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
             //write chatData to all clients
 			printf("data = %s\n",chatData);
-        	if(strstr(chatData, escape)!=NULL) {
+        	if(strstr(chatData, escape)!=NULL) { //escape의 문자 입력시 해당 스레드 종료
 				popClient(c_socket);
            	 break;
         	}
@@ -109,6 +110,36 @@ void *do_chat(void *arg)
 					i++;
 				}
 				write(c_socket,chatData,strlen(chatData));
+			}
+			else if(strncasecmp(usrMsg, "/c",2) == 0){
+				strtok(usrMsg," ");
+				char *temp;
+				if((temp = strtok(NULL," "))!=NULL){// "/c"
+					i=0;
+					printf("err 1\n");
+					//int croom = atoi(strtok(NULL," "));
+					int croom = atoi(temp);
+					printf("err 2\n");
+					if(croom >0 && croom <=10){
+						while(i<top){
+							if(c_socket == list_c[i].c_socket)
+								list_c[i].chatroom = croom;
+								roomnum = croom;
+							i++;			
+						}
+						sprintf(chatalert,"now you are in chatroom [%d]\n",croom);
+						write(c_socket,chatalert,strlen(chatalert));
+					}else{
+						sprintf(chatalert,"/c [room number (1~10)]\n");
+						write(c_socket,chatalert,strlen(chatalert));
+					}
+					
+				}
+				else{
+					sprintf(chatalert,"/c [room number (1~10)]\n");
+					write(c_socket,chatalert,strlen(chatalert));
+				}
+				
 			}
 			else if(strncasecmp(usrMsg,"/w",2)==0){ //귓속말 판별
 				char namedesc[20]; //귓속말 대상 닉네임
@@ -151,9 +182,14 @@ void *do_chat(void *arg)
 			//else if (strncasecmp(usrMsg,"/
 			else { // 아무 명령어 없을 경우 전체 대화
 				i=0;
-				while(i<MAX_CLIENT){
+				while(i<top){
+					if(roomnum == list_c[i].chatroom)
 					write(list_c[i].c_socket,chatData,strlen(chatData));
+					
 					i++;
+						printf("err");
+					//write(list_c[i].c_socket,chatData,strlen(chatData));
+					//i++;
 				}
 			}
         }
