@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <time.h>
+
 void *do_chat(void *); //채팅 메세지를 보내는 함수
 int pushClient(int); //새로운 클라이언트가 접속했을 때 클라이언트 정보 추가
 int popClient(int); //클라이언트가 종료했을 때 클라이언트 정보 삭제
@@ -19,6 +21,7 @@ pthread_mutex_t mutex;
 typedef struct __clientData{
 	int c_socket;
 	char nickname[20];
+	int chatroom;
 } clientData;
 clientData list_c[MAX_CLIENT];
 char    escape[ ] = "exit";
@@ -75,9 +78,13 @@ void *do_chat(void *arg)
 	printf("c_socket add = %d\n",(int *) arg);
 	char username [20];
 	strcpy(username,(char *)(arg+sizeof(int))); //nickname 저장
+	int roomnum = *((int *)(arg+sizeof(int)+(sizeof(char)*20)));
     char chatData[CHATDATA];
+	char chatalert [CHATDATA];
     int i=0, n;
 	printf("now name = %s\n",username);
+	sprintf(chatalert,"You are in chatroom %d\n",roomnum);
+	write(c_socket, chatalert,strlen(chatalert));
     while(1) {
         memset(chatData, 0, sizeof(chatData)); 
 		printf("%s top = %d\n",username,top);
@@ -161,6 +168,8 @@ int pushClient(int c_socket) {
 	if(top<MAX_CLIENT){
 			list_c[top].c_socket = c_socket;
 			read(c_socket,list_c[top].nickname,sizeof(sizeof(char)*20));//receive nickname from client
+			srand(time(NULL));
+			list_c[top].chatroom = (int)(rand()%10)+1;//1에서 10사이의 무작위 대화방 입장
 			pthread_mutex_unlock(&mutex);
 			printf("top in pushC = %d\n",top);
 			printf("list add[toop] = %d\n", (int *)&list_c[top]);
