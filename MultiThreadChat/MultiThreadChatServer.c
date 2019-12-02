@@ -13,10 +13,10 @@ int popClient(int); //클라이언트가 종료했을 때 클라이언트 정보
 int top; //클라이언트 스택 관리
 pthread_t thread;
 pthread_mutex_t mutex;
-#define MAX_CLIENT 4
+#define MAX_CLIENT 10 
 #define CHATDATA 1024
 #define INVALID_SOCK -1
-#define PORT 9980
+#define PORT 9001
 //int    list_c[MAX_CLIENT];
 typedef struct __clientData{
 	int c_socket;
@@ -72,18 +72,46 @@ int main(int argc, char *argv[ ])
 }
 void *do_chat(void *arg)
 {
-    //int c_socket = *((int *)arg);
-	int c_socket = *((int *)arg); //클라이언트 socket 정보 저장
-	//int c_socket = ((clientData *)arg->c_socket);
+	//클라이언트 socket 정보 저장
+	//int c_socket = *((int *)arg); //arg에서 int크기만
+	//int c_socket = ((clientData *)arg)->c_socket; // arg 구조체크기 형변환
+	int c_socket = (*(clientData *)arg).c_socket; //arg 구조체 형변환후역참조
 	printf("c_socket add = %d\n",(int *) arg);
 	char username [20];
-	strcpy(username,(char *)(arg+sizeof(int))); //nickname 저장
-	int roomnum = *((int *)(arg+sizeof(int)+(sizeof(char)*20)));
+	//strcpy(username,(char *)(arg+sizeof(int))); //nickname 저장
+	strcpy(username,((clientData *)arg)->nickname);
+	//int roomnum = *((int *)(arg+sizeof(int)+(sizeof(char)*20)));
+	int roomnum = (*(clientData *)arg).chatroom;
     char chatData[CHATDATA];
 	char chatalert [CHATDATA];
-    int i=0, n;
+	char *usrMsg;
+    int i=0, n,roomSelect=1;
 	memset(chatalert,0,sizeof(chatalert));
-	printf("now name = %s\n",username);
+	while(roomSelect){ //처음 입장시 채팅방 선택
+        memset(chatData, 0, sizeof(chatData)); 
+		strcpy(chatalert,"select chatroom (1~10) : ");
+		write(c_socket, chatalert,strlen(chatalert));
+    	if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
+			//usrMsg = chatData;
+			//usrMsg = usrMsg+(strlen(username)+3);//"[닉네임] " 만큼 문자열 포인터 이동
+			usrMsg = strtok(chatData," ");
+			if(((usrMsg = strtok(NULL," "))!=NULL)&& ((roomnum = atoi(usrMsg)))>0 
+					&& roomnum<=10){
+
+				//roomnum =  atoi(usrMsg);
+				pthread_mutex_lock(&mutex);
+				while(i<top){
+					if(c_socket == list_c[i].c_socket){
+						list_c[i].chatroom = roomnum;
+						roomSelect=0;
+						break;
+					}
+					i++;
+				}
+				pthread_mutex_unlock(&mutex);
+			}
+		}
+	}
 	sprintf(chatalert,"You are in chatroom %d\n",roomnum);
 	write(c_socket, chatalert,strlen(chatalert));
     while(1) {
@@ -93,17 +121,26 @@ void *do_chat(void *arg)
             //write chatData to all clients
 			printf("data = %s\n",chatData);
         	if(strstr(chatData, escape)!=NULL) { //escape의 문자 입력시 해당 스레드 종료
+				i=0;
+				sprintf(chatalert,"[%s] has left the room\n",username);
+				while(i<top){
+					if(roomnum == list_c[i].chatroom) //나갈때 방에 알림
+						write(list_c[i].c_socket,chatalert,strlen(chatalert));
+					i++;
+				}
 				popClient(c_socket);
            	 break;
         	}
-			char *usrMsg = chatData;
+			usrMsg = chatData;
 			usrMsg = usrMsg+(strlen(username)+3);//"[닉네임] " 만큼 문자열 포인터 이동
-			if(strncasecmp(usrMsg,"/who",4)==0){
+			if(strncasecmp(usrMsg,"/who",4)==0){//방에 누가 있는지 검색
 				i = 0;
+				int roomMem=0;
 					memset(chatData,0,sizeof(chatData));
-					sprintf(chatData,"There are %d people in chatroom\n",top);
+					sprintf(chatData,"There are %d people in chat server\npeople in the chatroom [%d]\n",top,roomnum);
 				while(i<top){
-					strcat(chatData,list_c[i].nickname);
+					if(roomnum == list_c[i].chatroom)
+						strcat(chatData,list_c[i].nickname);
 					if(strcmp(username,list_c[i].nickname)==0)
 						strcat(chatData," (You)");
 					strcat(chatData,"\n");
@@ -111,15 +148,12 @@ void *do_chat(void *arg)
 				}
 				write(c_socket,chatData,strlen(chatData));
 			}
-			else if(strncasecmp(usrMsg, "/c",2) == 0){
+			else if(strncasecmp(usrMsg, "/c",2) == 0){// 채팅방 바꾸는 기능
 				strtok(usrMsg," ");
 				char *temp;
 				if((temp = strtok(NULL," "))!=NULL){// "/c"
 					i=0;
-					printf("err 1\n");
-					//int croom = atoi(strtok(NULL," "));
 					int croom = atoi(temp);
-					printf("err 2\n");
 					if(croom >0 && croom <=10){
 						while(i<top){
 							if(c_socket == list_c[i].c_socket)
@@ -179,7 +213,6 @@ void *do_chat(void *arg)
 				}
 					
 			}
-			//else if (strncasecmp(usrMsg,"/
 			else { // 아무 명령어 없을 경우 전체 대화
 				i=0;
 				while(i<top){
@@ -188,8 +221,6 @@ void *do_chat(void *arg)
 					
 					i++;
 						printf("err");
-					//write(list_c[i].c_socket,chatData,strlen(chatData));
-					//i++;
 				}
 			}
         }
@@ -200,13 +231,29 @@ void *do_chat(void *arg)
 int pushClient(int c_socket) {
     //ADD c_socket to list_c array.
 	int i=0;
-	pthread_mutex_lock(&mutex);
+	char namebuf[20];
+	char sendbuf [CHATDATA];
+	//pthread_mutex_lock(&mutex);
 	if(top<MAX_CLIENT){
 			list_c[top].c_socket = c_socket;
-			read(c_socket,list_c[top].nickname,sizeof(sizeof(char)*20));//receive nickname from client
-			srand(time(NULL));
-			list_c[top].chatroom = (int)(rand()%10)+1;//1에서 10사이의 무작위 대화방 입장
-			pthread_mutex_unlock(&mutex);
+			//read(c_socket,list_c[top].nickname,sizeof(sizeof(char)*20));//receive nickname from client
+			 //이름 중복검사후 중복되면 연결종료
+			 	memset(namebuf,0,sizeof(namebuf));
+				read(c_socket,namebuf,sizeof(char)*20);
+				while(i<=top){
+					printf("loop entered\n");
+					if(strcmp(namebuf,list_c[i].nickname)==0){
+						sprintf(sendbuf,"[%s] is already exists!!\n",namebuf);
+						write(c_socket,sendbuf,strlen(sendbuf));
+						return -1;
+					}
+					i++;
+				}
+			
+			strcpy(list_c[top].nickname,namebuf);
+			/*srand(time(NULL));
+			list_c[top].chatroom = (int)(rand()%10)+1;//1에서 10사이의 무작위 대화방 입장*/
+			//pthread_mutex_unlock(&mutex);
 			printf("top in pushC = %d\n",top);
 			printf("list add[toop] = %d\n", (int *)&list_c[top]);
 			printf("sockadd = %d\n",(int *)&list_c[top].c_socket);
@@ -215,7 +262,7 @@ int pushClient(int c_socket) {
 		} 
 	else
 	
-		pthread_mutex_unlock(&mutex);
+		//pthread_mutex_unlock(&mutex);
 		return -1;
     //return -1, if list_c is full.
     //return the index of list_c which c_socket is added.

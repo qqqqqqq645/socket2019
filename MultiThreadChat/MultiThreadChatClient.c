@@ -9,7 +9,7 @@
 #include <signal.h>
 #define CHATDATA 1024
 #define IPADDR "127.0.0.1"
-#define PORT 9980
+#define PORT 9001
 void *do_send_chat(void *);
 void *do_receive_chat(void *);
 pthread_t thread_1, thread_2;
