@@ -67,7 +67,7 @@ int main(int argc, char *argv[ ])
             //int status = pthread_create(&thread,NULL,do_chat,(void *)&c_socket);
             int status = pthread_create(&thread,NULL,do_chat,(void *)&list_c[res]);
         }
-		printf("top = %d\n",top);
+	//	printf("top = %d\n",top);
     }
 }
 void *do_chat(void *arg)
@@ -76,7 +76,6 @@ void *do_chat(void *arg)
 	//int c_socket = *((int *)arg); //arg에서 int크기만
 	//int c_socket = ((clientData *)arg)->c_socket; // arg 구조체크기 형변환
 	int c_socket = (*(clientData *)arg).c_socket; //arg 구조체 형변환후역참조
-	printf("c_socket add = %d\n",(int *) arg);
 	char username [20];
 	//strcpy(username,(char *)(arg+sizeof(int))); //nickname 저장
 	strcpy(username,((clientData *)arg)->nickname);
@@ -116,10 +115,10 @@ void *do_chat(void *arg)
 	write(c_socket, chatalert,strlen(chatalert));
     while(1) {
         memset(chatData, 0, sizeof(chatData)); 
-		printf("%s top = %d\n",username,top);
+		//printf("%s top = %d\n",username,top);
         if((n = read(c_socket, chatData, sizeof(chatData))) > 0) {
             //write chatData to all clients
-			printf("data = %s\n",chatData);
+			//printf("data = %s\n",chatData);
         	if(strstr(chatData, escape)!=NULL) { //escape의 문자 입력시 해당 스레드 종료
 				i=0;
 				sprintf(chatalert,"[%s] has left the room\n",username);
@@ -181,7 +180,6 @@ void *do_chat(void *arg)
 				char sendMsg[CHATDATA];
 				memset(sendMsg,0,sizeof(sendMsg)); //보낼 메세지 문자열 초기화
 				strtok(usrMsg," ");// "/w"
-				printf("usrMsg = %s\n",usrMsg);
 				msg = strtok(NULL," ");//닉네임 토큰
 				if(msg != NULL){
 					strcpy(namedesc,msg); //대상 닉네임 복사
@@ -220,7 +218,6 @@ void *do_chat(void *arg)
 					write(list_c[i].c_socket,chatData,strlen(chatData));
 					
 					i++;
-						printf("err");
 				}
 			}
         }
@@ -254,10 +251,6 @@ int pushClient(int c_socket) {
 			/*srand(time(NULL));
 			list_c[top].chatroom = (int)(rand()%10)+1;//1에서 10사이의 무작위 대화방 입장*/
 			//pthread_mutex_unlock(&mutex);
-			printf("top in pushC = %d\n",top);
-			printf("list add[toop] = %d\n", (int *)&list_c[top]);
-			printf("sockadd = %d\n",(int *)&list_c[top].c_socket);
-			printf("nameadd = %d\n",(int *)&list_c[top].nickname);
 			return top++;
 		} 
 	else
@@ -285,12 +278,12 @@ int popClient(int c_socket)
 		}
 		i++;
 	}
-			printf("top in popC before before mutex = %d\n",top);
+			//printf("top in popC before before mutex = %d\n",top);
 	list_c[--top].c_socket = INVALID_SOCK;
 	memset(list_c[top].nickname,0,strlen(list_c[top].nickname));
-			printf("top in popC before mutex = %d\n",top);
+			//printf("top in popC before mutex = %d\n",top);
 	pthread_mutex_unlock(&mutex);
-			printf("top in popC = %d\n",top);
+			//printf("top in popC = %d\n",top);
 	return top;
 	
 
